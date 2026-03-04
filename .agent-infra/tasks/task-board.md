@@ -1,14 +1,16 @@
 # Task Board
 
-**Feature:** [Feature Name]
-**Plan:** See plans/current-plan.md
+**Project:** [Project Name]
+**Master Plan:** See plans/master-plan.md (if multi-plan project)
+**Active Plan:** See plans/current-plan.md
 **Status:** not-started | in-progress | complete
+**Teams:** 1
 **Updated:** [timestamp]
 **Owner:** Orchestrator
 
 ---
 
-## Current Task: [Task Title]
+## Team 1 — [Plan/Task Title]
 
 ### Checklist
 - [ ] 1. [Item description] — **Files:** `path/to/file` — **Status:** pending
@@ -16,6 +18,20 @@
 
 ### Notes
 - [Any coordination notes, dependencies between items, etc.]
+
+---
+
+<!-- When running multiple teams, add a section per team:
+
+## Team 2 — [Plan/Task Title]
+
+### Checklist
+- [ ] 1. [Item description] — **Files:** `path/to/file` — **Status:** pending
+
+### Notes
+- File scopes MUST NOT overlap with Team 1's items
+
+-->
 
 ---
 

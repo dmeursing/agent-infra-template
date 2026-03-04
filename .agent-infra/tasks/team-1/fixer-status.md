@@ -1,8 +1,8 @@
-# Fixer Status
+# Fixer Status — Team 1
 
 **Current Task:** [none]
 **Updated:** [timestamp]
-**Owner:** Agent C (Fixer)
+**Owner:** Agent C (Fixer) — Team 1
 
 ## Current
 [No active work]

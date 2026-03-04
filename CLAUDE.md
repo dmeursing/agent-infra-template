@@ -2,38 +2,53 @@
 
 This project uses a multi-agent coordination system. All agent configuration, plans, tasks, and lessons are in `.agent-infra/`.
 
-## Quick Start
-
-Open four Claude Code tabs and paste one line per tab:
+## Quick Start — Single Team (4 tabs)
 
 1. `Read .agent-infra/roles/orchestrator.md — you are the Orchestrator.`
-2. `Read .agent-infra/roles/builder.md — you are Agent A (Builder).`
-3. `Read .agent-infra/roles/qa.md — you are Agent B (QA).`
-4. `Read .agent-infra/roles/fixer.md — you are Agent C (Fixer).`
+2. `Read .agent-infra/roles/builder.md — you are Agent A (Builder) on Team 1.`
+3. `Read .agent-infra/roles/qa.md — you are Agent B (QA) on Team 1.`
+4. `Read .agent-infra/roles/fixer.md — you are Agent C (Fixer) on Team 1.`
+
+## Quick Start — Two Teams (7 tabs)
+
+1. `Read .agent-infra/roles/orchestrator.md — you are the Orchestrator.`
+2. `Read .agent-infra/roles/builder.md — you are Agent A (Builder) on Team 1.`
+3. `Read .agent-infra/roles/qa.md — you are Agent B (QA) on Team 1.`
+4. `Read .agent-infra/roles/fixer.md — you are Agent C (Fixer) on Team 1.`
+5. `Read .agent-infra/roles/builder.md — you are Agent A (Builder) on Team 2.`
+6. `Read .agent-infra/roles/qa.md — you are Agent B (QA) on Team 2.`
+7. `Read .agent-infra/roles/fixer.md — you are Agent C (Fixer) on Team 2.`
+
+Before starting Team 2, create the folder: `mkdir -p .agent-infra/tasks/team-2` and copy status templates from `team-1/`.
 
 ## Agent Overview
 
-| Tab | Agent | Role | Writes Code? |
-|-----|-------|------|-------------|
-| 1 | Orchestrator | Plans, decomposes, reviews, curates lessons | No |
-| 2 | Agent A (Builder) | Implements features sequentially through checklist | Yes |
-| 3 | Agent B (QA) | Monitors, tests, validates plan alignment | No |
-| 4 | Agent C (Fixer) | Fixes bugs + refactors completed items behind Agent A | Yes |
+| Agent | Role | Writes Code? |
+|-------|------|-------------|
+| Orchestrator | Plans, decomposes, assigns to teams, reviews, curates lessons | No |
+| Agent A (Builder) | Implements features sequentially through checklist | Yes |
+| Agent B (QA) | Monitors, tests, validates plan alignment | No |
+| Agent C (Fixer) | Fixes bugs + refactors completed items behind Agent A | Yes |
+
+## Planning Hierarchy
+
+- **Small project:** Orchestrator writes `current-plan.md` directly
+- **Large project:** Orchestrator writes `master-plan.md` with multiple plans, then activates them one at a time (or in parallel across teams)
 
 ## Assembly Line Model
 
-Agents work simultaneously on the same task but on different checklist items:
+Each team runs its own assembly line on non-overlapping files:
 - Agent A moves forward through items, committing after each
 - Agent C works behind Agent A on completed items only
 - Agent B monitors everything and writes findings
-- Orchestrator coordinates via the task board
+- Orchestrator coordinates all teams via the task board
 
 ## Key Directories
 
 - `.agent-infra/roles/` — Role definitions (read-only after setup)
-- `.agent-infra/plans/` — Current plan (Orchestrator-owned)
-- `.agent-infra/tasks/` — Task board + agent status files
-- `.agent-infra/lessons/` — Accumulated lessons (per-agent + universal)
+- `.agent-infra/plans/` — Master plan + current plan (Orchestrator-owned)
+- `.agent-infra/tasks/` — Task board + per-team status folders
+- `.agent-infra/lessons/` — Accumulated lessons (per-role + universal)
 - `.agent-infra/reviews/` — Code review log (Orchestrator-owned)
 
 ## File Ownership
@@ -42,8 +57,9 @@ Every file has exactly ONE write-owner. See each role file for details. Agents m
 
 ## Shared Conventions
 
-- Commit messages reference checklist item numbers: `feat: Item #3 — description`
-- Fix commits reference QA findings: `fix: Finding #2 — Item #1 — description`
+- Commit messages include team: `feat(team-1): Item #3 — description`
+- Fix commits reference findings: `fix(team-1): Finding #2 — Item #1 — description`
 - Status files use append-only format with timestamps
 - Lessons follow the standard format with Context, Lesson, and Apply-when fields
-- All lesson files have entry caps (30 per agent, 20 for universal) — enforce strictly
+- All lesson files have entry caps (30 per role, 20 for universal) — enforce strictly
+- Parallel teams MUST have non-overlapping file scopes — no exceptions

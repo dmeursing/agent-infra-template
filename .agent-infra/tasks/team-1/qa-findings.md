@@ -1,8 +1,8 @@
-# QA Findings
+# QA Findings — Team 1
 
 **Current Task:** [none]
 **Updated:** [timestamp]
-**Owner:** Agent B (QA)
+**Owner:** Agent B (QA) — Team 1
 
 ---
 
