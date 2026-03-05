@@ -78,15 +78,37 @@ tasks/
 ```
 
 ### Recommended Limits
-- **Max 3 teams** running in parallel — beyond this, coordination overhead outweighs throughput gains
+- **Max 2 teams** running in parallel (enforced by `launch-team.sh`, override with `--max-teams 3`)
 - Start with 1 team. Add a second only when you have plans with clearly non-overlapping scopes.
+
+### Team Launch Decision Tree
+
+Before launching any team beyond Team 1, verify ALL of the following:
+
+1. **Check master-plan.md** — Does the new team's plan have a "Depends On" entry?
+   - If yes → Is the dependency plan marked `complete`? If not, **do NOT launch**.
+   - If no → proceed to step 2.
+2. **Check file scope overlap** — Compare the new team's file scope with ALL running teams' scopes.
+   - ANY overlap → **do NOT launch**. Wait for the conflicting team to finish, or re-scope the plans.
+   - No overlap → proceed to step 3.
+3. **Check team limit** — Are 2 teams already running? (`bash .agent-infra/scripts/status.sh`)
+   - If yes → Stop a completed team first, then launch.
+   - If no → safe to launch.
+4. **Update master-plan.md** — Set the plan's status to `active` and assign it to the team.
+5. **Launch:** `bash .agent-infra/scripts/add-team.sh <N>` then `bash .agent-infra/scripts/launch-team.sh <N>`
+
+The `launch-team.sh` script enforces step 1 and step 3 automatically — it will warn if a dependency is incomplete and block if the team limit is reached. But **you must still verify file scope overlap yourself** (step 2) since only you understand the plan structure.
 
 ## Continuous Workflow Loop
 1. **Monitor** — Read all team status files (`team-*/builder-status.md`, `team-*/qa-findings.md`, `team-*/fixer-status.md`)
 2. **Update task board** — Check off completed items, add new items from QA findings, update team assignments
 3. **Review** — Read committed code, write feedback in `reviews/review-log.md`
-4. **Advance plans** — When a team's plan completes, check `master-plan.md` for the next plan to assign
-5. **Curate lessons** — Run the curation cycle after each completed task
+4. **Advance plans** — When a team's plan completes:
+   a. Update master-plan.md: mark plan as `complete`
+   b. Stop the team: `bash .agent-infra/scripts/stop-team.sh <N>`
+   c. Check if any blocked plans are now unblocked
+   d. Follow the Team Launch Decision Tree before launching the next team
+5. **Curate lessons** — Run `bash .agent-infra/scripts/curate-lessons.sh` then do the curation cycle
 6. Loop back to step 1
 
 ## Task Scoping Rules
@@ -97,11 +119,14 @@ tasks/
 - Add QA findings as new checklist items assigned to the appropriate team's Fixer
 
 ## Lesson Curation Cycle (after each completed task)
-1. **Read** all four lesson files (planning, building, qa-testing, fixing)
-2. **Promote** cross-cutting lessons from agent files → `universal.md` (remove from source file)
-3. **Prune** outdated, incorrect, or vague lessons
-4. **Consolidate** duplicate or similar lessons across agents
-5. **Enforce limits** — `universal.md` max 20 entries, agent files max 30 entries
+1. **Check health:** `bash .agent-infra/scripts/curate-lessons.sh` — see which files need attention
+2. **Read** all four lesson files (planning, building, qa-testing, fixing)
+3. **Promote** cross-cutting lessons from agent files → `universal.md` (remove from source file)
+   - A lesson is cross-cutting if it applies to 2+ agent types
+4. **Prune** outdated, incorrect, or vague lessons
+5. **Consolidate** duplicate or similar lessons across agents
+6. **Enforce limits** — `universal.md` max 20 entries, agent files max 30 entries
+7. **Verify:** Re-run `curate-lessons.sh` to confirm all files are within limits
 
 ## Anti-Bloat Rules
 - `universal.md`: max 20 entries — only highest-value cross-cutting lessons
@@ -109,6 +134,58 @@ tasks/
 - Status files from other agents: don't worry about their size, they manage their own
 - Task board: keep only current tasks + completed task titles (no full history)
 - Master plan: keep plan list updated, archive completed plans to a "Completed" section
+
+## Auto-Launch Capabilities
+
+You can programmatically launch and manage agent teams using the scripts in `.agent-infra/scripts/`. This replaces the manual process of opening tabs and pasting role prompts.
+
+### Available Commands
+
+| Command | Purpose |
+|---------|---------|
+| `bash .agent-infra/scripts/add-team.sh <N>` | Create team folder with status templates |
+| `bash .agent-infra/scripts/launch-team.sh <N>` | Launch all 3 agents in tmux windows |
+| `bash .agent-infra/scripts/stop-team.sh <N>` | Graceful shutdown of a team |
+| `bash .agent-infra/scripts/status.sh` | Dashboard: running agents, status, crashes |
+| `bash .agent-infra/scripts/send-message.sh <N> <role> "msg"` | Send a message to a specific agent |
+| `bash .agent-infra/scripts/curate-lessons.sh` | Lesson health: entry counts vs limits |
+
+### Auto-Launch Workflow
+
+After creating the plan and task board, launch teams automatically:
+
+1. **Create team folder:** `bash .agent-infra/scripts/add-team.sh 1`
+2. **Launch agents:** `bash .agent-infra/scripts/launch-team.sh 1`
+   - Starts 3 interactive Claude sessions in tmux (builder, qa, fixer)
+   - Each agent receives its role prompt automatically
+   - Agents run with `--permission-mode acceptEdits`
+   - If an agent crashes, it auto-restarts with `--continue` (exponential backoff, max 5 retries)
+   - Blocks launch if 2 teams already running or if plan dependencies aren't met
+3. **Monitor progress:** `bash .agent-infra/scripts/status.sh`
+4. **Send urgent messages:** `bash .agent-infra/scripts/send-message.sh 1 builder "Re-read task board"`
+5. **Stop when done:** `bash .agent-infra/scripts/stop-team.sh 1`
+
+### tmux Session Structure
+
+```
+Session: agent-infra
+├── team-1-builder   (interactive claude)
+├── team-1-qa        (interactive claude)
+├── team-1-fixer     (interactive claude)
+├── team-2-builder   (if launched)
+├── team-2-qa
+└── team-2-fixer
+```
+
+View agents: `tmux attach -t agent-infra`
+
+### Safety & Options
+- **Team limit:** Max 2 concurrent teams (override: `--max-teams 3`)
+- **Dependency check:** Reads master-plan.md and warns if launching a team whose plan depends on an incomplete plan
+- **Force launch:** `--force` skips dependency checks (use only when you're certain)
+- **Crash resilience:** Agents auto-restart with exponential backoff (5s→10s→20s→40s→80s), stop after 5 consecutive crashes
+- **Crash logs:** Written to `.agent-infra/tasks/team-<N>/crash.log`, auto-rotated at 50 entries
+- **Skip permissions:** `--skip-permissions` flag for sandboxed environments only
 
 ## Conflict Rules
 - NEVER write source code

@@ -22,13 +22,27 @@ cp "$TMPDIR/TEAM-GUIDE.md" .
 
 rm -rf "$TMPDIR"
 
+# Make auto-launch scripts executable
+chmod +x .agent-infra/scripts/*.sh
+
 echo ""
 echo "Done! Added to your project:"
-echo "  .agent-infra/    — agent roles, plans, tasks, lessons"
+echo "  .agent-infra/    — agent roles, plans, tasks, lessons, scripts"
 echo "  CLAUDE.md        — project root config"
 echo "  TEAM-GUIDE.md    — team reference guide"
 echo ""
-echo "=== Single Team (4 tabs) ==="
+echo "=== Automated Mode (recommended) ==="
+echo "  1. Open one Claude Code tab for the Orchestrator:"
+echo "     Read .agent-infra/roles/orchestrator.md — you are the Orchestrator."
+echo "  2. The Orchestrator can auto-launch agent teams with:"
+echo "     bash .agent-infra/scripts/add-team.sh 1"
+echo "     bash .agent-infra/scripts/launch-team.sh 1"
+echo "  3. Monitor: bash .agent-infra/scripts/status.sh"
+echo "  4. Stop:    bash .agent-infra/scripts/stop-team.sh 1"
+echo ""
+echo "  Requires: tmux (brew install tmux)"
+echo ""
+echo "=== Manual Mode (4 tabs) ==="
 echo "  Tab 1: Read .agent-infra/roles/orchestrator.md — you are the Orchestrator."
 echo "  Tab 2: Read .agent-infra/roles/builder.md — you are Agent A (Builder) on Team 1."
 echo "  Tab 3: Read .agent-infra/roles/qa.md — you are Agent B (QA) on Team 1."

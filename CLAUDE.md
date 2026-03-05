@@ -2,14 +2,31 @@
 
 This project uses a multi-agent coordination system. All agent configuration, plans, tasks, and lessons are in `.agent-infra/`.
 
-## Quick Start — Single Team (4 tabs)
+## Quick Start — Automated Mode (recommended)
+
+1. Open one Claude Code tab for the Orchestrator:
+   `Read .agent-infra/roles/orchestrator.md — you are the Orchestrator.`
+2. The Orchestrator auto-launches agent teams via tmux:
+   ```bash
+   bash .agent-infra/scripts/add-team.sh 1      # create team folder
+   bash .agent-infra/scripts/launch-team.sh 1    # launch 3 agents (max 2 teams enforced)
+   bash .agent-infra/scripts/status.sh           # monitor progress
+   bash .agent-infra/scripts/send-message.sh 1 builder "Re-read task board"  # message an agent
+   bash .agent-infra/scripts/curate-lessons.sh   # check lesson file health
+   bash .agent-infra/scripts/stop-team.sh 1      # stop when done
+   ```
+3. View agents: `tmux attach -t agent-infra`
+
+Agents auto-restart on crash with `--continue` (exponential backoff, max 5 retries). Launch blocks if plan dependencies aren't met or 2 teams already running. Requires tmux (`brew install tmux`).
+
+## Quick Start — Manual Mode: Single Team (4 tabs)
 
 1. `Read .agent-infra/roles/orchestrator.md — you are the Orchestrator.`
 2. `Read .agent-infra/roles/builder.md — you are Agent A (Builder) on Team 1.`
 3. `Read .agent-infra/roles/qa.md — you are Agent B (QA) on Team 1.`
 4. `Read .agent-infra/roles/fixer.md — you are Agent C (Fixer) on Team 1.`
 
-## Quick Start — Two Teams (7 tabs)
+## Quick Start — Manual Mode: Two Teams (7 tabs)
 
 1. `Read .agent-infra/roles/orchestrator.md — you are the Orchestrator.`
 2. `Read .agent-infra/roles/builder.md — you are Agent A (Builder) on Team 1.`

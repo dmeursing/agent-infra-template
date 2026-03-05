@@ -4,7 +4,39 @@
 
 An assembly-line system where teams of AI agents build, monitor, and fix code simultaneously — coordinated by a single Orchestrator. Scales from one team (4 tabs) to multiple teams running in parallel (7-10 tabs).
 
-## Setup (2 minutes)
+## Setup — Automated Mode (recommended)
+
+1. Copy `.agent-infra/` and `CLAUDE.md` into your project root (or run `setup.sh`)
+2. Install tmux if needed: `brew install tmux`
+3. Open **one** Claude Code tab for the Orchestrator:
+
+```
+Read .agent-infra/roles/orchestrator.md — you are the Orchestrator.
+```
+
+4. The Orchestrator launches agent teams automatically:
+
+```bash
+bash .agent-infra/scripts/add-team.sh 1      # create team folder
+bash .agent-infra/scripts/launch-team.sh 1    # launch builder, qa, fixer in tmux
+bash .agent-infra/scripts/status.sh           # monitor all agents
+bash .agent-infra/scripts/send-message.sh 1 builder "Re-read task board"  # message agent
+bash .agent-infra/scripts/curate-lessons.sh   # check lesson file health
+bash .agent-infra/scripts/stop-team.sh 1      # stop team when done
+```
+
+5. View running agents: `tmux attach -t agent-infra`
+
+Each agent runs in a persistent interactive session with auto-restart on crash (`--continue` preserves context, exponential backoff, max 5 retries). Agents use `--permission-mode acceptEdits`.
+
+**Safety guardrails:**
+- Max 2 concurrent teams (override: `--max-teams 3`)
+- Launch blocks if plan dependencies aren't met (reads master-plan.md)
+- Crash logs auto-rotate at 50 entries
+
+For a second team, just run `add-team.sh 2` then `launch-team.sh 2` — the script checks master-plan.md dependencies before launching.
+
+## Setup — Manual Mode (4-7 tabs)
 
 1. Copy `.agent-infra/` and `CLAUDE.md` into your project root
 2. Open Claude Code tabs and paste one line per tab:
@@ -90,6 +122,14 @@ The Orchestrator ensures parallel teams never touch the same files.
 │   │   ├── qa-findings.md
 │   │   └── fixer-status.md
 │   └── team-2/          # Team 2's status files (create when needed)
+├── scripts/             # Auto-launch scripts
+│   ├── _common.sh        # Shared functions
+│   ├── launch-team.sh    # Start agents in tmux (enforces team limit + deps)
+│   ├── stop-team.sh      # Graceful shutdown
+│   ├── status.sh         # Dashboard
+│   ├── add-team.sh       # Create team folder
+│   ├── send-message.sh   # Message an agent
+│   └── curate-lessons.sh # Lesson entry counts vs limits
 ├── lessons/             # Accumulated knowledge (persists across tasks)
 └── reviews/             # Code review log (Orchestrator)
 ```
